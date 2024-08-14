@@ -8,6 +8,7 @@ defineProps<{
 
 const usersList = ref<any[]>([]);
 const url = ref<String>("/");
+const message = ref<String>("");
 const edit = ref<Boolean>(false);
 const filtered = ref<Boolean>(false);
 const token = ref<any>("");
@@ -20,7 +21,7 @@ const filter = ref({
   gender: "",
 });
 
-// User edit
+// User edit value
 const editUser = ref({
   id: "",
   name: "",
@@ -59,7 +60,7 @@ const removeFilter = () => {
 const getUsersList = async () => {
   try {
     let result = await axios.get(url.value + "list-users");
-    usersList.value = result.data;
+    usersList.value = result.data;    
   } catch (error) {
     console.error("Error fetching user list:", error);
   }
@@ -71,7 +72,7 @@ const getToken = async () => {
     let result = await axios.get(url.value + "token");
     token.value = result.data;
   } catch (error) {
-    console.error("Error fetching user list:", error);
+    console.error("Error fetching token:", error);
   }
 };
 
@@ -84,7 +85,7 @@ onBeforeMount(() => {
 // search function
 const searchUsers = async () => {
   filtered.value = true;
-  try {
+  try {   
     const response = await axios.get(url.value + "search-users", {
       params: {
         id: filter.value.id,
@@ -94,6 +95,7 @@ const searchUsers = async () => {
       },
     });
     usersList.value = response.data; // Uloženie výsledkov do userList
+    setMessage('Nájdené '+Object.keys(usersList.value ).length)
   } catch (error) {
     console.error("Error fetching filtered users:", error);
   }
@@ -101,10 +103,10 @@ const searchUsers = async () => {
 
 // destroy user
 const deleteUser = async (id: number) => {
-  axios.defaults.headers.common["X-CSRF-TOKEN"] = token.value;
   try {
     const response = await axios.delete(url.value + `delete-user/${id}`);
     usersList.value = response.data;
+    setMessage('Užívateľ ID '+id+' bol odstránení.')
   } catch (error) {
     console.error("Error deleting user:", error);
   }
@@ -112,24 +114,42 @@ const deleteUser = async (id: number) => {
 
 //update user
 const updateUser = async () => {
-  axios.defaults.headers.common["X-CSRF-TOKEN"] = token.value;
   try {
     const response = await axios.put(
       url.value + `update-user/${editUser.value.id}`,
       editUser.value
     );
     usersList.value = response.data;
+    setMessage('Užívateľ bol upravený.')
   } catch (error) {
     console.error("Error updating user:", error);
-  }
-  usersList.value = usersList.value.map((user) =>
-    user.id === editUser.value.id ? { ...user, ...editUser.value } : user
-  );
+  } 
 };
+
+
+const setMessage = async (msg:String,time:number = 1500) => {
+   message.value = msg
+   setTimeout(() => {
+    message.value = ''
+   }, time);
+};
+
 </script>
 <template>
   <div class="greetings w-100">
-    <h1 class="green">{{ msg }}</h1>
+    <div class="d-flex flex-row justify-content-between">
+       <h1 class="green">{{ msg }}</h1>
+       <transition name="fade">
+       <div v-if="message.length > 0" class="toast align-items-center show text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+              {{message}}      
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+     </transition>
+    </div>    
     <div>
       <h3>Vyhľadávanie</h3>
       <div class="d-flex flex-row align-items-center">
@@ -186,7 +206,7 @@ const updateUser = async () => {
         </button>
       </div>
     </div>
-    <transition>
+    <transition name="fade">
       <div v-if="edit">
         <h3>Upraviť {{ editUser.name }}</h3>
         <div class="d-flex flex-row align-items-center">
@@ -309,5 +329,12 @@ h3 {
 .table-leave-to {
   opacity: 0;
   transform: translateY(20px);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+  opacity: 0;
 }
 </style>
