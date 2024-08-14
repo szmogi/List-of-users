@@ -24,40 +24,39 @@ class Controller extends BaseController
     ['id' => 10, 'name' => 'Charlotte Clark', 'age' => 26, 'gender' => 'female'],
   ];
 
-  //zoznam  
+  //users list  
   public function usersList(Request $request)
   { 
     return response()->json($this->users);
   }
 
-  //filtrovanie
+  //filtered user
   public function searchUsers(Request $request)
   {
-    // Získajte všetky filtre z dotazu
+    // All filter values request
     $filters = $request->only(['id', 'name', 'age', 'gender']);  
-    // Filtrovanie používateľov podľa zadaných parametrov
+    // Filtering users according to the specified parameters
     $result = [];
     foreach ($this->users as $key => $user) {
       foreach ($filters as $key => $value) {
         if (!empty($value)) {      
           if ($key === 'name') {
-            // Pre meno sa robí vyhľadávanie podľa podreťazca (case-insensitive)            
+            // Search by substring is done for the name          
             if (stripos($user[$key], $value) !== false) {          
               $result[$user['id']] = $user;
             }
           } else if (strtolower($user[$key]) == strtolower($value)) {
-            // Porovnanie pre iné parametre (id, age, gender)
+            // Comparison for other parameters (id, age, gender)
             $result[$user['id']] = $user;
           }
         }
       }      
     }
-
-    // Vráti upravený zoznam používateľov
+    // Returns the edited list of users
     return response()->json($result); 
   }
 
-  //vymazanie podla id user
+  //destroy user 
   public function deleteUser(Request $request, $id)
   {
     $users = $this->users;
@@ -71,12 +70,10 @@ class Controller extends BaseController
     return response()->json($users);
   }
 
-
-  //editacia usera
+  //editing usera
   public function updateUser(Request $request, $id)
   {
     $users = $this->users;
-
     foreach ($users as $key => $user) {
       if($user['id'] = $id ){
         $users[$key]['name'] = $request->name;
