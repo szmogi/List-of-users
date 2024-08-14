@@ -83,7 +83,7 @@ onBeforeMount(() => {
 
 // search function
 const searchUsers = async () => {
-  filtered.value = true
+  filtered.value = true;
   try {
     const response = await axios.get(url.value + "search-users", {
       params: {
@@ -103,20 +103,22 @@ const searchUsers = async () => {
 const deleteUser = async (id: number) => {
   axios.defaults.headers.common["X-CSRF-TOKEN"] = token.value;
   try {
-    await axios.delete(url.value + `delete-user/${id}`);
-    // Aktualizácia zoznamu používateľov po odstránení
-    usersList.value = usersList.value.filter((user) => user.id !== id);
+    const response = await axios.delete(url.value + `delete-user/${id}`);
+    usersList.value = response.data;
   } catch (error) {
     console.error("Error deleting user:", error);
   }
-  usersList.value = usersList.value.filter((user) => user.id !== id);
 };
 
 //update user
 const updateUser = async () => {
   axios.defaults.headers.common["X-CSRF-TOKEN"] = token.value;
   try {
-    await axios.put(url.value + `update-user/${editUser.value.id}`, editUser.value);
+    const response = await axios.put(
+      url.value + `update-user/${editUser.value.id}`,
+      editUser.value
+    );
+    usersList.value = response.data;
   } catch (error) {
     console.error("Error updating user:", error);
   }
@@ -174,7 +176,8 @@ const updateUser = async () => {
         <button @click="searchUsers()" type="button" class="btn ms-1 mb-3 btn-primary">
           Hľadať
         </button>
-        <button v-if="filtered"
+        <button
+          v-if="filtered"
           @click="getUsersList(), removeFilter()"
           type="button"
           class="btn ms-1 mb-3 btn-primary"
@@ -183,7 +186,7 @@ const updateUser = async () => {
         </button>
       </div>
     </div>
-    <Transition>
+    <transition>
       <div v-if="edit">
         <h3>Upraviť {{ editUser.name }}</h3>
         <div class="d-flex flex-row align-items-center">
@@ -229,7 +232,7 @@ const updateUser = async () => {
           </button>
         </div>
       </div>
-    </Transition>
+    </transition>
     <table v-if="Object.keys(usersList).length > 0" class="table table-light">
       <thead>
         <tr>
@@ -240,7 +243,7 @@ const updateUser = async () => {
           <th scope="col">Možnosti</th>
         </tr>
       </thead>
-      <tbody>
+      <transition-group name="table" tag="tbody">
         <tr v-for="(user, index) in usersList" :index="index">
           <th>{{ user.id }}</th>
           <td>{{ user.name }}</td>
@@ -259,7 +262,7 @@ const updateUser = async () => {
             </button>
           </td>
         </tr>
-      </tbody>
+      </transition-group>
     </table>
     <div v-else>
       <h3 class="text-center py-3">Zoznam prázdny</h3>
@@ -296,8 +299,15 @@ h3 {
   transition: opacity 0.5s ease;
 }
 
-.v-enter-from,
-.v-leave-to {
+/* Transition classes for adding/removing rows */
+.table-enter-active,
+.table-leave-active {
+  transition: all 0.5s ease;
+}
+
+.table-enter-from,
+.table-leave-to {
   opacity: 0;
+  transform: translateY(20px);
 }
 </style>

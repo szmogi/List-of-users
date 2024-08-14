@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class Controller extends BaseController
 {
@@ -26,7 +27,16 @@ class Controller extends BaseController
 
   //users list  
   public function usersList(Request $request)
-  { 
+  {
+    $users = Session::get('users', []);
+
+    //if not set session
+    if(empty($users)){
+      Session::put('users', $this->users);
+    } else {
+      $this->users = $users;
+    }
+    
     return response()->json($this->users);
   }
 
@@ -34,51 +44,54 @@ class Controller extends BaseController
   public function searchUsers(Request $request)
   {
     // All filter values request
-    $filters = $request->only(['id', 'name', 'age', 'gender']);  
+    $filters = $request->only(['id', 'name', 'age', 'gender']);
     // Filtering users according to the specified parameters
-    $result = [];
-    foreach ($this->users as $key => $user) {
+    $results = [];
+    $users = Session::get('users', []);
+    foreach ($users as $key => $user) {
       foreach ($filters as $key => $value) {
         if (!empty($value)) {      
           if ($key === 'name') {
             // Search by substring is done for the name          
-            if (stripos($user[$key], $value) !== false) {          
-              $result[$user['id']] = $user;
+            if (stripos($user[$key], $value) !== false) {
+              $results[$user['id']] = $user;
             }
           } else if (strtolower($user[$key]) == strtolower($value)) {
             // Comparison for other parameters (id, age, gender)
-            $result[$user['id']] = $user;
+            $results[$user['id']] = $user;
           }
         }
       }      
     }
     // Returns the edited list of users
-    return response()->json($result); 
+    return response()->json($results); 
   }
 
   //destroy user 
   public function deleteUser(Request $request, $id)
   {
-    $users = $this->users;
-    $result = [];
+    $results = [];
+    $users = Session::get('users', []);
  
-    foreach ($this->users as $key => $user) {
+    foreach($users as $key => $user) {
        if($user['id'] != $id){
-        $result[$key] = $user;
+        $results[$key] = $user;
        }
     }
-    return response()->json($users);
+    Session::put('users', $results);
+    return response()->json($results);
   }
 
   //editing usera
   public function updateUser(Request $request, $id)
   {
-    $users = $this->users;
+    $users = Session::get('users', []);
     foreach ($users as $key => $user) {
       if($user['id'] = $id ){
         $users[$key]['name'] = $request->name;
         $users[$key]['age'] = $request->age;
         $users[$key]['gender'] = $request->gender;
+        Session::put('users', $users);
         return response()->json($users);
       }    
     }
