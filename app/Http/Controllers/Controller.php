@@ -11,7 +11,6 @@ class Controller extends BaseController
 {
   use AuthorizesRequests, ValidatesRequests;
 
-
   protected $users = [
     ['id' => 1, 'name' => 'John Doe', 'age' => 28, 'gender' => 'male'],
     ['id' => 2, 'name' => 'Jane Smith', 'age' => 22, 'gender' => 'female'],
@@ -86,6 +85,6 @@ class Controller extends BaseController
         return response()->json($users);
       }    
     }
-    return response()->json(['message' => 'Editing of the user was not successful.']);
+    return response()->json(['message' => 'Úprava používateľa nebola úspešná.']);
   }  
 }
