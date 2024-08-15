@@ -87,7 +87,7 @@ class Controller extends BaseController
   {
     $users = Session::get('users', []);
     foreach ($users as $key => $user) {
-      if($user['id'] = $id ){
+      if($user['id'] == $id ){
         $users[$key]['name'] = $request->name;
         $users[$key]['age'] = $request->age;
         $users[$key]['gender'] = $request->gender;
