@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { ref, onBeforeMount } from "vue";
+import { ref, onBeforeMount , computed } from "vue";
 import axios from "axios";
 
+// props
 defineProps<{
   msg: string;
 }>();
 
+// variables
 const usersList = ref<any[]>([]);
 const url = ref<String>("/");
 const message = ref<String>("");
 const edit = ref<Boolean>(false);
 const filtered = ref<Boolean>(false);
 const token = ref<any>("");
+const currentPage = ref<any>(1);
+const pageSize = ref<any>(5);
 
 // filters value
 const filter = ref({
@@ -60,7 +64,7 @@ const removeFilter = () => {
 const getUsersList = async () => {
   try {
     let result = await axios.get(url.value + "list-users");
-    usersList.value = result.data;    
+    usersList.value = result.data;
   } catch (error) {
     console.error("Error fetching user list:", error);
   }
@@ -85,7 +89,7 @@ onBeforeMount(() => {
 // search function
 const searchUsers = async () => {
   filtered.value = true;
-  try {   
+  try {
     const response = await axios.get(url.value + "search-users", {
       params: {
         id: filter.value.id,
@@ -95,7 +99,7 @@ const searchUsers = async () => {
       },
     });
     usersList.value = response.data; // Uloženie výsledkov do userList
-    setMessage('Nájdené '+Object.keys(usersList.value ).length)
+    setMessage("Nájdené " + Object.keys(usersList.value).length);
   } catch (error) {
     console.error("Error fetching filtered users:", error);
   }
@@ -106,7 +110,7 @@ const deleteUser = async (id: number) => {
   try {
     const response = await axios.delete(url.value + `delete-user/${id}`);
     usersList.value = response.data;
-    setMessage('Užívateľ ID '+id+' bol odstránení.')
+    setMessage("Užívateľ ID " + id + " bol odstránení.");
   } catch (error) {
     console.error("Error deleting user:", error);
   }
@@ -120,36 +124,82 @@ const updateUser = async () => {
       editUser.value
     );
     usersList.value = response.data;
-    setMessage('Užívateľ bol upravený.')
+    setMessage("Užívateľ bol upravený.");
   } catch (error) {
     console.error("Error updating user:", error);
-  } 
+  }
 };
 
-
-const setMessage = async (msg:String,time:number = 1500) => {
-   message.value = msg
-   setTimeout(() => {
-    message.value = ''
-   }, time);
+// set message
+const setMessage = async (msg: String, time: number = 1500) => {
+  message.value = msg;
+  setTimeout(() => {
+    message.value = "";
+  }, time);
 };
 
+// pager
+const currentPageUsers = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize.value;
+  const endIndex = startIndex + pageSize.value;
+  usersList.value = proxyObjectToArray(usersList.value);
+  return usersList.value.slice(startIndex, endIndex);
+});
+
+// proxy object to array
+function proxyObjectToArray(proxyObject: any) {
+  const array = [];
+  for (const key in proxyObject) {
+    if (Object.prototype.hasOwnProperty.call(proxyObject, key)) {
+      array.push(proxyObject[key]);
+    }
+  }
+  return array;
+}
+
+//reset pager
+const resetPager = () => {
+  currentPage.value = 1;
+};
+
+//show next users
+const showNextUsers = () => {
+  currentPage.value++;
+};
+
+//show previous users
+const showPreviousUsers = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
 </script>
 <template>
   <div class="greetings w-100">
     <div class="d-flex flex-row justify-content-between">
-       <h1 class="green">{{ msg }}</h1>
-       <transition name="fade">
-       <div v-if="message.length > 0" class="toast align-items-center show text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-          <div class="toast-body">
-              {{message}}      
+      <h1 class="green">{{ msg }}</h1>
+      <transition name="fade">
+        <div
+          v-if="message.length > 0"
+          class="toast align-items-center show text-bg-success border-0"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="d-flex">
+            <div class="toast-body">
+              {{ message }}
+            </div>
+            <button
+              type="button"
+              class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
           </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
-      </div>
-     </transition>
-    </div>    
+      </transition>
+    </div>
     <div>
       <h3>Vyhľadávanie</h3>
       <div class="d-flex flex-row align-items-center">
@@ -264,7 +314,7 @@ const setMessage = async (msg:String,time:number = 1500) => {
         </tr>
       </thead>
       <transition-group name="table" tag="tbody">
-        <tr v-for="(user, index) in usersList" :index="index">
+        <tr v-for="(user, index) in currentPageUsers" :index="index">
           <th>{{ user.id }}</th>
           <td>{{ user.name }}</td>
           <td>{{ user.age }}</td>
@@ -286,6 +336,24 @@ const setMessage = async (msg:String,time:number = 1500) => {
     </table>
     <div v-else>
       <h3 class="text-center py-3">Zoznam prázdny</h3>
+    </div>
+    <div v-if="Object.keys(usersList).length > 0" class="d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-link"
+        v-if="currentPage > 1"
+        @click="showPreviousUsers"
+      >
+        Späť
+      </button>
+      <button
+        type="button"
+        class="btn btn-link"
+        v-if="usersList.length > pageSize * currentPage"
+        @click="showNextUsers"
+      >
+        Ďalej
+      </button>
     </div>
   </div>
 </template>
@@ -331,7 +399,8 @@ h3 {
   transform: translateY(20px);
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.5s;
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
